@@ -27,7 +27,7 @@ def signup():
 
     conn = get_connection()
     if conn is None:
-        return jsonify({"error": "Database connection failed"}), 500
+        return jsonify({"success": False, "message": "Database connection failed"}), 500
 
     try:
         cursor = conn.cursor()
@@ -47,7 +47,7 @@ def signup():
         return jsonify({"success": True, "message": "회원가입 성공!"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
