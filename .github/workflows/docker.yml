@@ -2,37 +2,35 @@ name: CI/CD using GitHub Actions & Docker
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Debug: List workspace files
-      run: ls -al $GITHUB_WORKSPACE
+      - name: "Debug: List workspace files"
+        run: ls -al $GITHUB_WORKSPACE
 
-    - name: Docker build & push to Docker Hub
-      run: |
-        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-        docker build -f $GITHUB_WORKSPACE/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/snake-game $GITHUB_WORKSPACE
-        docker push ${{ secrets.DOCKER_USERNAME }}/snake-game
+      - name: Docker build & push to Docker Hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -f $GITHUB_WORKSPACE/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/snake-game $GITHUB_WORKSPACE
+          docker push ${{ secrets.DOCKER_USERNAME }}/snake-game
 
-    - name: Docker image pull & Deploy to EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_PRIVATE_KEY }}
-        script: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
-          docker stop $(docker ps -q) || true
-          docker rm $(docker ps -a -q) || true
-          docker run -d -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
-          docker image prune -a -f
-
+      - name: Docker image pull & Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
+            docker stop $(docker ps -q) || true
+            docker rm $(docker ps -a -q) || true
+            docker run -d -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
+            docker image prune -a -f
