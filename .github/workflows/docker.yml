@@ -39,8 +39,6 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/snake-game-ci-cd
-            docker stop $(docker ps -q) || true
-            docker rm $(docker ps -aq) || true
-            docker-compose pull
-            docker-compose up -d --build
-            docker image prune -a -f
+            docker-compose down -v || true  # 🔥 DB 포함 완전 초기화
+            docker-compose up -d --build    # ✅ 새로 빌드해서 올림
+            docker image prune -a -f || true  # 🧹 불필요한 이미지 정리
