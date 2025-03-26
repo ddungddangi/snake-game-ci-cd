@@ -1,0 +1,35 @@
+name: CI/CD using GitHub Actions & Docker
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Docker build & push
+    - name: Docker build & push to Docker Hub
+      run: |
+        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/snake-game .
+        docker push ${{ secrets.DOCKER_USERNAME }}/snake-game
+
+    # EC2 배포
+    - name: Docker image pull & Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        script: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
+          docker stop $(docker ps -q) || true
+          docker rm $(docker ps -a -q) || true
+          docker run -d -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/snake-game:latest
+          docker image prune -a -f
