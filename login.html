@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <style>
+        body {
+            background-color: #1e1e2e;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            padding: 20px;
+            text-align: center;
+            border: solid 1px rgba(219,219,219,1);
+            width: 350px;
+            height: 420px;
+            background: #2e2e2e;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        .login-title {
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffffff; 
+        }
+        .login-subtitle {
+            font-weight: bold;
+            color: #cccccc;
+            margin-bottom: 20px;
+        }
+        .form-floating input {
+            background-color: #3a3a3a;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .form-floating label {
+            color: #aaaaaa;
+        }
+        .login-button, .signup-button {
+            background-color: #ff416c;
+            border-color: #ff416c;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 25px;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            color: #ffffff;
+        }
+        .login-button:hover, .signup-button:hover {
+            background-color: #ff4b2b;
+            transform: scale(1.05);
+            box-shadow: 0px 7px 20px rgba(255, 69, 0, 0.6);
+        }
+        .login-button:active, .signup-button:active {
+            transform: scale(0.95);
+        }
+        .suggestions {
+            background-color: #3a3a3a;
+            color: white;
+            list-style: none;
+            margin-top: 5px;
+            padding: 0;
+            border-radius: 5px;
+            position: absolute;
+            width: 100%;
+            z-index: 10;
+            display: none;
+        }
+        .suggestions li {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .suggestions li:hover {
+            background-color: #ff416c;
+        }
+    </style>
+</head>
+<body>
+ 
+<div class="container">
+    <div class="login-title">🐍 SNAKE GAME</div>
+    <div class="login-subtitle">게임하려면 가입하세요</div>
+    <div class="form-floating mb-3" style="position: relative;">
+        <input type="email" class="form-control" id="input_email" placeholder="Email address">
+        <label for="input_email">Email address</label>
+        <ul id="suggestions" class="suggestions"></ul>
+    </div>
+    <div class="form-floating">
+        <input type="password" class="form-control" id="input_password" placeholder="Password">
+        <label for="input_password">Password</label>
+    </div>
+    <div style="padding-top: 20px">
+        <button id="login_button" type="button" class="login-button">로그인</button>
+    </div>
+    <div style="padding-top: 10px">
+        <button id="signup_button" type="button" class="signup-button" onclick="location.href='/signup';">회원가입</button>
+    </div>
+</div>
+ 
+<script>
+    $(document).ready(function () {
+      // 🔹 이메일 자동완성
+      $("#input_email").on("input", function () {
+        let email = $(this).val();
+        let atIndex = email.indexOf('@');
+  
+        if (atIndex > -1) {
+          let domain = email.substring(atIndex);
+          let suggestions = ["@gmail.com", "@naver.com", "@kakao.com", "@outlook.com"];
+          let matchedSuggestions = suggestions.filter(function (item) {
+            return item.indexOf(domain) !== -1;
+          });
+  
+          if (matchedSuggestions.length > 0) {
+            $("#suggestions").empty().show();
+            matchedSuggestions.forEach(function (suggestion) {
+              $("#suggestions").append(
+                "<li>" + email.substring(0, atIndex) + suggestion + "</li>"
+              );
+            });
+  
+            $("#suggestions li").on("click", function () {
+              $("#input_email").val($(this).text());
+              $("#suggestions").hide();
+            });
+          } else {
+            $("#suggestions").hide();
+          }
+        } else {
+          $("#suggestions").hide();
+        }
+      });
+  
+      // 🔹 로그인 요청
+      $('#login_button').click(function () {
+        let email = $('#input_email').val();
+        let password = $('#input_password').val();
+  
+        $.post("/user/login", { email, password }, function (res) {
+          if (res.success) {
+            location.href = res.redirect;
+          } else {
+            alert(res.message);
+          }
+        }).fail(function (res) {
+          alert("로그인 실패: " + res.responseJSON.message);
+        });
+      });
+    });
+  </script>
+  
+</body>
+</html>
