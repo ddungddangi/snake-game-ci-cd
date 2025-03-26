@@ -3,7 +3,7 @@ import pymysql
 
 # MySQL/MariaDB 연결 설정
 db_config = {
-    "host": os.environ.get("DB_HOST", "localhost"),
+    "host": os.environ.get("DB_HOST", "db"),
     "user": os.environ.get("DB_USER", "root"),
     "password": os.environ.get("DB_PASSWORD", "test123"),
     "database": os.environ.get("DB_DATABASE", "mariadb"),
