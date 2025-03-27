@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Snake Game</title>
   <style>
     body {
@@ -19,13 +19,46 @@
       overflow: hidden;
       cursor: default;
     }
-    canvas {
-      width: 600px;
-      height: 450px;
-      border: 3px solid black;
-      background-color: #f0f0f0;
+
+    #gameOverScreen {
       display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 5px 15px rgba(255, 69, 0, 0.4);
     }
+
+    #rankingModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #rankingContent {
+      background-color: #2e2e2e;
+      padding: 30px;
+      border-radius: 15px;
+      width: 320px;
+      text-align: center;
+    }
+
+    #ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0;
+      text-align: left;
+    }
+
     .button {
       background: linear-gradient(45deg, #ff416c, #ff4b2b);
       color: white;
@@ -37,46 +70,18 @@
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0px 5px 15px rgba(255, 69, 0, 0.4);
-      outline: none;
-      margin-top: 30px;
+      margin-top: 20px;
     }
-    .button:hover {
-      background: linear-gradient(45deg, #ff4b2b, #ff416c);
-      transform: scale(1.05);
-      box-shadow: 0px 7px 20px rgba(255, 69, 0, 0.6);
-    }
-    .button:active {
-      transform: scale(0.95);
-    }
-    .hidden {
+
+    canvas {
+      width: 600px;
+      height: 450px;
+      border: 3px solid black;
+      background-color: #f0f0f0;
       display: none;
     }
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-    .modal-content {
-      background-color: #2e2e2e;
-      padding: 30px;
-      border-radius: 10px;
-      width: 350px;
-      text-align: center;
-    }
-    .ranking-list {
-      list-style: none;
-      padding: 0;
-      text-align: left;
-      margin-top: 15px;
-      font-size: 16px;
-    }
+
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -87,19 +92,19 @@
   <button id="restartButton" class="button hidden">🔄 재시작</button>
   <canvas id="gameCanvas" width="600" height="600"></canvas>
 
-  <div id="gameOverScreen" class="hidden">
-    <h1 style="color:red; font-size: 50px">GAME OVER</h1>
+  <div id="gameOverScreen">
+    <h1>GAME OVER</h1>
     <p id="usernameDisplay"></p>
     <p id="currentScoreDisplay"></p>
     <button id="restartGameOverButton" class="button">🔄 다시 시작</button>
   </div>
 
-  <!-- 포탈방식 리애킹 목록 모델 -->
-  <div id="rankingModal" class="modal hidden">
-    <div class="modal-content">
-      <h2>🏆 전체 랭킹 (Top 10)</h2>
-      <ul id="rankingList" class="ranking-list"></ul>
-      <button onclick="closeModal()" class="button">닫기</button>
+  <!-- 🔽 전체 랭킹 모달 -->
+  <div id="rankingModal">
+    <div id="rankingContent">
+      <h3>🏆 전체 랭킹 (Top 10)</h3>
+      <ul id="ranking-list"></ul>
+      <button id="closeRanking" class="button">닫기</button>
     </div>
   </div>
 
@@ -112,12 +117,20 @@
     const gameOverScreen = document.getElementById("gameOverScreen");
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const rankingModal = document.getElementById("rankingModal");
+    const closeRanking = document.getElementById("closeRanking");
 
     const box = 20;
-    let snake, direction, food, score, gameInterval, gameRunning = false;
+    let snake;
+    let direction;
+    let food;
+    let score;
+    let gameInterval;
+    let gameRunning = false;
 
-    document.addEventListener("DOMContentLoaded", function () {
-      fetchHighScore();
+    document.addEventListener("DOMContentLoaded", fetchHighScore);
+    closeRanking.addEventListener("click", () => {
+      rankingModal.style.display = "none";
     });
 
     function resetGame() {
@@ -136,38 +149,31 @@
     function fetchHighScore() {
       fetch("/get_high_score")
         .then(res => res.json())
-        .then(data => highScoreDisplay.textContent = data.high_score);
+        .then(data => highScoreDisplay.textContent = data.high_score)
+        .catch(console.error);
     }
 
     function fetchFoodPosition() {
       fetch("/game_data")
         .then(res => res.json())
-        .then(data => food = data.food);
+        .then(data => food = data.food)
+        .catch(console.error);
     }
 
-    function startGame() {
-      if (gameRunning) return;
-      gameRunning = true;
-      startButton.classList.add("hidden");
-      restartButton.classList.add("hidden");
-      gameOverScreen.classList.add("hidden");
-      canvas.style.display = "block";
-      resetGame();
-      fetchHighScore();
-      gameInterval = setInterval(drawGame, 100);
-    }
-
-    function restartGame() {
-      clearInterval(gameInterval);
-      startGame();
-    }
-
-    function changeDirection(e) {
-      const key = e.key;
-      if (key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-      else if (key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-      else if (key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-      else if (key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    function fetchRankingAndShow() {
+      fetch("/ranking")
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById("ranking-list");
+          list.innerHTML = "";
+          data.ranking.forEach((user, idx) => {
+            const li = document.createElement("li");
+            const crown = idx === 0 ? "👑 " : "";
+            li.textContent = `${crown}${idx + 1}. ${user.username} - ${user.score}`;
+            list.appendChild(li);
+          });
+          rankingModal.style.display = "flex";
+        });
     }
 
     function drawGame() {
@@ -196,18 +202,13 @@
       }
 
       const newHead = { x: newX, y: newY };
-
-      if (
-        newX < 0 || newX >= canvas.width ||
-        newY < 0 || newY >= canvas.height ||
-        snake.some(segment => segment.x === newX && segment.y === newY)
-      ) {
+      if (newX < 0 || newX >= canvas.width || newY < 0 || newY >= canvas.height || collision(newHead, snake)) {
         clearInterval(gameInterval);
         gameRunning = false;
-        gameOverScreen.classList.remove("hidden");
+        gameOverScreen.style.display = "block";
         document.getElementById("currentScoreDisplay").textContent = `🎯 점수: ${score}`;
         updateHighScore(score);
-        showRankingModal();
+        fetchRankingAndShow();
         return;
       }
 
@@ -217,32 +218,42 @@
     function updateHighScore(score) {
       fetch("/update_high_score", {
         method: "POST",
-        body: JSON.stringify({ score }),
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ score })
       });
     }
 
-    function showRankingModal() {
-      fetch("/ranking")
-        .then(res => res.json())
-        .then(data => {
-          const list = document.getElementById("rankingList");
-          list.innerHTML = "";
-          data.ranking.forEach((user, idx) => {
-            const li = document.createElement("li");
-            const crown = idx === 0 ? "👑 " : "";
-            li.textContent = `${crown}${idx + 1}. ${user.username} - ${user.score}`;
-            list.appendChild(li);
-          });
-          document.getElementById("rankingModal").classList.remove("hidden");
-        });
+    function collision(head, body) {
+      return body.some(segment => segment.x === head.x && segment.y === head.y);
     }
 
-    function closeModal() {
-      document.getElementById("rankingModal").classList.add("hidden");
+    function startGame() {
+      if (gameRunning) return;
+      gameRunning = true;
+      startButton.classList.add("hidden");
+      restartButton.classList.add("hidden");
+      gameOverScreen.style.display = "none";
+      rankingModal.style.display = "none";
+      canvas.style.display = "block";
+      resetGame();
+      fetchHighScore();
+      gameInterval = setInterval(drawGame, 100);
+    }
+
+    function restartGame() {
+      clearInterval(gameInterval);
+      startGame();
     }
 
     document.addEventListener("keydown", changeDirection);
+    function changeDirection(e) {
+      const key = e.key;
+      if (key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      else if (key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    }
+
     startButton.addEventListener("click", startGame);
     restartButton.addEventListener("click", restartGame);
     restartGameOverButton.addEventListener("click", restartGame);
