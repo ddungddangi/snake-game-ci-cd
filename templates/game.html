@@ -15,8 +15,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-y: auto;
             cursor: default;
         }
 
@@ -241,6 +241,11 @@
                 gameOverScreen.style.display = "block";
                 document.getElementById("currentScoreDisplay").textContent = `🎯 점수: ${score}`;
                 updateHighScore(score);
+
+                const rankingSection = document.getElementById("ranking-section");
+                if (rankingSection) {
+                    rankingSection.scrollIntoView({ behavior: "smooth" });
+                }
                 return;
             }
 
