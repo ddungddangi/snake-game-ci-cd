@@ -4,8 +4,8 @@ import pymysql
 # MySQL/MariaDB 연결 설정
 db_config = {
     "host": os.environ.get("DB_HOST", "db"),
-    "user": os.environ.get("DB_USER", "root"),
-    "password": os.environ.get("DB_PASSWORD", "test123"),
+    "user": os.environ.get("DB_USER", "user"),
+    "password": os.environ.get("DB_PASSWORD", "password"),
     "database": os.environ.get("DB_DATABASE", "mariadb"),
     "port": int(os.environ.get("DB_PORT", 3306)),
     "charset": "utf8mb4"
@@ -60,7 +60,7 @@ def insert_user(username, email):
     
     try:
         cursor = conn.cursor()
-        insert_query = "INSERT INTO users (name, email) VALUES (%s, %s)"
+        insert_query = "INSERT INTO users (username, email) VALUES (%s, %s)"
         cursor.execute(insert_query, (username, email))
         conn.commit()
         print(f"✅ 사용자 추가 완료: {username}, {email}")

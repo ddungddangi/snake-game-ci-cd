@@ -8,8 +8,8 @@ services:
       - "5000:5000"
     environment:
       - DB_HOST=db
-      - DB_USER=root
-      - DB_PASSWORD=test123
+      - DB_USER=user
+      - DB_PASSWORD=password
       - DB_DATABASE=mariadb
       - DB_PORT=3306
     depends_on:

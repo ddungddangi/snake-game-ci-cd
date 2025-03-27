@@ -5,6 +5,7 @@ import random
 app = Flask(__name__, template_folder="templates")
 app.secret_key = "supersecretkey"
 
+# -------------------- 회원가입 --------------------
 @app.route("/signup", methods=["GET"])
 def signup_page():
     return render_template("signup.html")
@@ -15,6 +16,7 @@ def signup():
     email = data.get("email")
     username = data.get("username")
     password = data.get("password")
+
     if not email or not username or not password:
         return jsonify({"success": False, "message": "모든 필드를 입력하세요."}), 400
 
@@ -27,6 +29,7 @@ def signup():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         if cursor.fetchone():
             return jsonify({"success": False, "message": "이미 등록된 이메일입니다."}), 400
+
         cursor.execute(
             "INSERT INTO users (email, username, password, high_score) VALUES (%s, %s, %s, 0)",
             (email, username, password)
@@ -39,6 +42,7 @@ def signup():
         cursor.close()
         conn.close()
 
+# -------------------- 로그인 --------------------
 @app.route("/")
 def login_page():
     return render_template("login.html")
@@ -73,6 +77,7 @@ def logout():
     session.pop("username", None)
     return redirect(url_for("login_page"))
 
+# -------------------- 게임 --------------------
 @app.route("/game")
 def game_page():
     if "username" in session:
@@ -87,6 +92,7 @@ def start_game():
 def game_data():
     return jsonify({"food": {"x": random.randint(0, 29) * 20, "y": random.randint(0, 29) * 20}})
 
+# -------------------- 점수 관리 --------------------
 @app.route("/get_high_score")
 def get_high_score():
     if "username" not in session:
@@ -94,6 +100,8 @@ def get_high_score():
 
     username = session["username"]
     conn = get_connection()
+    if conn is None:
+        return jsonify({"high_score": 0})
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT high_score FROM users WHERE username = %s", (username,))
@@ -113,6 +121,8 @@ def update_high_score():
     username = session["username"]
     new_score = request.json.get("score")
     conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "DB 연결 실패"}), 500
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT high_score FROM users WHERE username = %s", (username,))
@@ -129,9 +139,12 @@ def update_high_score():
         cursor.close()
         conn.close()
 
+# -------------------- 랭킹 --------------------
 @app.route("/ranking")
 def ranking():
     conn = get_connection()
+    if conn is None:
+        return jsonify({"ranking": []})
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT username, high_score FROM users ORDER BY high_score DESC LIMIT 10")
