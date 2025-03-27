@@ -92,6 +92,19 @@
     <button id="startButton" class="button">🎮 게임 시작</button>
     <button id="restartButton" class="button hidden">🔄 재시작</button>
     <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <!-- 🔽 전체 랭킹 표시 영역 -->
+    <div id="ranking-section" style="margin-top: 30px; background-color: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; width: 300px;">
+      <h3 style="margin-bottom: 15px;">🏆 전체 랭킹 (Top 10)</h3>
+      <ul id="ranking-list" style="
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        text-align: left;
+        font-size: 16px;
+        line-height: 1.6;
+        font-weight: 500;
+      "></ul>
+    </div>
 
     <div id="gameOverScreen">
         <h1>GAME OVER</h1>
@@ -120,6 +133,20 @@
 
         document.addEventListener("DOMContentLoaded", function () {
             fetchHighScore();
+            
+            // 🔽 전체 랭킹 가져오기
+            fetch("/ranking")
+              .then((res) => res.json())
+              .then((data) => {
+                const list = document.getElementById("ranking-list");
+                list.innerHTML = "";
+                data.ranking.forEach((user, idx) => {
+                  const li = document.createElement("li");
+                  const crown = idx === 0 ? "👑 " : "";
+                  li.textContent = `${crown}${idx + 1}. ${user.username} - ${user.score}`;
+                  list.appendChild(li);
+                });
+            });
         });
 
         function resetGame() {

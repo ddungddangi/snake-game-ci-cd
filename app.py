@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from db import get_connection
+from flask_sqlalchemy import SQLAlchemy
 import random
 
 app = Flask(__name__, template_folder="templates")
@@ -183,6 +184,37 @@ def update_high_score():
 
 # ==================================:
 # ✅ 5. Flask 실행 설정
+# ==================================
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+# ==================================
+# ✅ 6. 사용자 랭킹 기능
+# ==================================
+
+@app.route("/ranking")
+def ranking():
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"ranking": []})
+
+    try:
+        cursor = conn.cursor()
+        query = "SELECT username, high_score FROM users ORDER BY high_score DESC LIMIT 10"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        ranking_data = [{"username": row[0], "score": row[1]} for row in rows]
+        return jsonify({"ranking": ranking_data})
+    except Exception as e:
+        return jsonify({"ranking": [], "error": str(e)})
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==================================
+# ✅ 7. Flask 실행 설정
 # ==================================
 
 if __name__ == "__main__":
