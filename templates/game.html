@@ -1,78 +1,263 @@
-<script>
-  let gameInterval;
-  
-  function startGame() {
-      if (gameRunning) return;
-      gameRunning = true;
-  
-      startButton.classList.add("hidden");
-      restartButton.classList.add("hidden");
-      gameOverScreen.style.display = "none";
-      canvas.style.display = "block";
-      resetGame();
-      fetchHighScore();
-      gameInterval = setInterval(drawGame, 70);  // ⏩ 속도 증가
-  }
-  
-  function drawGame() {
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Snake Game</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Arial', sans-serif;
+      background-color: #1e1e2e;
+      color: #ffffff;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      cursor: default;
+    }
+
+    #gameOverScreen {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 5px 15px rgba(255, 69, 0, 0.4);
+      z-index: 998;
+    }
+
+    #rankingModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #rankingContent {
+      background-color: #2e2e2e;
+      padding: 30px;
+      border-radius: 15px;
+      width: 320px;
+      text-align: center;
+    }
+
+    #ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .button {
+      background: linear-gradient(45deg, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 15px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0px 5px 15px rgba(255, 69, 0, 0.4);
+      margin-top: 20px;
+    }
+
+    canvas {
+      width: 600px;
+      height: 450px;
+      border: 3px solid black;
+      background-color: #f0f0f0;
+      display: none;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🐍 SNAKE GAME</h1>
+  <h2>🏆 최고 점수: <span id="highScore">0</span></h2>
+  <h3>🎯 현재 점수: <span id="currentScore">0</span></h3>
+  <button id="startButton" class="button">🎮 게임 시작</button>
+  <button id="restartButton" class="button hidden">🔄 재시작</button>
+  <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+  <div id="gameOverScreen">
+    <h1>GAME OVER</h1>
+    <p id="usernameDisplay"></p>
+    <p id="currentScoreDisplay"></p>
+    <button id="restartGameOverButton" class="button">🔄 다시 시작</button>
+  </div>
+
+  <!-- 🔽 전체 랭킹 모달 -->
+  <div id="rankingModal">
+    <div id="rankingContent">
+      <h3>🏆 전체 랭킹 (Top 10)</h3>
+      <ul id="ranking-list"></ul>
+      <button id="closeRanking" class="button">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
+    const restartGameOverButton = document.getElementById("restartGameOverButton");
+    const highScoreDisplay = document.getElementById("highScore");
+    const currentScoreDisplay = document.getElementById("currentScore");
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const rankingModal = document.getElementById("rankingModal");
+    const closeRanking = document.getElementById("closeRanking");
+
+    const box = 20;
+    let snake;
+    let direction;
+    let food;
+    let score;
+    let gameInterval;
+    let gameRunning = false;
+
+    document.addEventListener("DOMContentLoaded", fetchHighScore);
+    closeRanking.addEventListener("click", () => {
+      rankingModal.style.display = "none";
+    });
+
+    function resetGame() {
+      snake = [
+        { x: 10 * box, y: 10 * box },
+        { x: 9 * box, y: 10 * box },
+        { x: 8 * box, y: 10 * box }
+      ];
+      direction = "RIGHT";
+      food = { x: 0, y: 0 };
+      score = 0;
+      currentScoreDisplay.textContent = score;
+      fetchFoodPosition();
+    }
+
+    function fetchHighScore() {
+      fetch("/get_high_score")
+        .then(res => res.json())
+        .then(data => highScoreDisplay.textContent = data.high_score)
+        .catch(console.error);
+    }
+
+    function fetchFoodPosition() {
+      fetch("/game_data")
+        .then(res => res.json())
+        .then(data => food = data.food)
+        .catch(console.error);
+    }
+
+    function fetchRankingAndShow() {
+      fetch("/ranking")
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById("ranking-list");
+          list.innerHTML = "";
+          data.ranking.forEach((user, idx) => {
+            const li = document.createElement("li");
+            const crown = idx === 0 ? "👑 " : "";
+            li.textContent = `${crown}${idx + 1}. ${user.username} - ${user.score}`;
+            list.appendChild(li);
+          });
+          rankingModal.style.display = "flex";
+        });
+    }
+
+    function drawGame() {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
       ctx.fillStyle = "red";
       ctx.fillRect(food.x, food.y, box, box);
-  
+
       ctx.fillStyle = "lime";
       snake.forEach(segment => ctx.fillRect(segment.x, segment.y, box, box));
-  
+
       let newX = snake[0].x;
       let newY = snake[0].y;
-  
       if (direction === "LEFT") newX -= box;
       if (direction === "RIGHT") newX += box;
       if (direction === "UP") newY -= box;
       if (direction === "DOWN") newY += box;
-  
+
       if (newX === food.x && newY === food.y) {
-          fetchFoodPosition();
-          score += 10;
-          currentScoreDisplay.textContent = score;
+        fetchFoodPosition();
+        score += 10;
+        currentScoreDisplay.textContent = score;
       } else {
-          snake.pop();
+        snake.pop();
       }
-  
+
       const newHead = { x: newX, y: newY };
-  
       if (newX < 0 || newX >= canvas.width || newY < 0 || newY >= canvas.height || collision(newHead, snake)) {
-          clearInterval(gameInterval);
-          gameRunning = false;
-          gameOverScreen.style.display = "block";
-          document.getElementById("currentScoreDisplay").textContent = `🎯 점수: ${score}`;
-  
-          // 🔽 점수 업데이트 및 랭킹 모달 반영
-          fetch("/update_high_score", {
-              method: "POST",
-              body: JSON.stringify({ score: score }),
-              headers: { "Content-Type": "application/json" }
-          }).then(() => {
-              fetch("/ranking")
-                  .then(res => res.json())
-                  .then(data => {
-                      const list = document.getElementById("ranking-list");
-                      list.innerHTML = "";
-                      data.ranking.forEach((user, idx) => {
-                          const li = document.createElement("li");
-                          const crown = idx === 0 ? "👑 " : "";
-                          li.textContent = `${crown}${idx + 1}. ${user.username} - ${user.score}`;
-                          list.appendChild(li);
-                      });
-                      document.getElementById("rankingModal").style.display = "flex";
-                  });
-          });
-  
-          return;
+        clearInterval(gameInterval);
+        gameRunning = false;
+        gameOverScreen.style.display = "block";
+        document.getElementById("currentScoreDisplay").textContent = `🎯 점수: ${score}`;
+        updateHighScore(score);
+        fetchRankingAndShow();
+        return;
       }
-  
+
       snake.unshift(newHead);
-  }
+    }
+
+    function updateHighScore(score) {
+      fetch("/update_high_score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ score })
+      });
+    }
+
+    function collision(head, body) {
+      return body.some(segment => segment.x === head.x && segment.y === head.y);
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      gameRunning = true;
+      startButton.classList.add("hidden");
+      restartButton.classList.add("hidden");
+      gameOverScreen.style.display = "none";
+      rankingModal.style.display = "none";
+      canvas.style.display = "block";
+      resetGame();
+      fetchHighScore();
+      gameInterval = setInterval(drawGame, 80); // ✅ 속도 조절절
+    }
+
+    function restartGame() {
+      clearInterval(gameInterval);
+      startGame();
+    }
+
+    document.addEventListener("keydown", changeDirection);
+    function changeDirection(e) {
+      const key = e.key;
+      if (key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      else if (key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    }
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", restartGame);
+    restartGameOverButton.addEventListener("click", restartGame);
   </script>
-  
+</body>
+</html>
