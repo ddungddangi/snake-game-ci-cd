@@ -1,32 +1,78 @@
-🐍 Snake Game - 3-Tier Architecture 기반 배포 프로젝트
-🧱 구성 계층
+🐍 Snake Game on Docker (3-Tier Architecture)
+Flask 백엔드, HTML/JS 프론트, MySQL을 연동하여 제작한 Snake Game입니다.
+Docker Compose로 전체 서비스를 컨테이너화하고, GitHub Actions로 CI/CD 파이프라인을 구성했습니다.
 
-Presentation Layer (프론트엔드):
+✅ 본 문서는 main 브랜치를 기준으로 작성되었습니다.
 
-HTML/CSS + JavaScript 기반의 정적 웹 페이지로 게임 UI 구현
+📁 프로젝트 구조
+bash
+복사
+편집
+├── .github/workflows/           # GitHub Actions 파이프라인 정의
+│   └── docker.yml
+├── templates/                   # HTML 템플릿 (Snake 게임 UI)
+│   └── index.html
+├── app.py                       # Flask 메인 애플리케이션 (라우팅 & 로직)
+├── db.py                        # MySQL DB 연결 모듈
+├── init.sql                     # DB 초기화 스크립트
+├── requirements.txt             # 백엔드 의존성 정의
+├── Dockerfile                   # Flask 백엔드 Dockerfile
+├── docker-compose.yml           # 전체 컨테이너 정의
+└── README.md                    # 프로젝트 설명
+✅ 1. 주요 기술 스택
+계층	기술
+Frontend	HTML + JavaScript (templates/index.html)
+Backend	Python Flask (app.py, db.py)
+Database	MySQL (init.sql)
+Infra	Docker, Docker Compose
+CI/CD	GitHub Actions (docker.yml)
 
-Application Layer (백엔드):
+🐳 2. Docker 기반 로컬 실행
+bash
+복사
+편집
+docker-compose up --build
+Frontend: http://localhost:5000에서 게임 실행
 
-Flask를 이용해 점수 기록 등의 API 처리
+Backend: Flask 서버에서 점수 처리 API 제공
 
-Data Layer (DB):
+MySQL: 사용자 점수 저장 및 조회 처리
 
-MySQL을 통해 사용자 점수 기록 관리
+🔁 3. 점수 저장 API 예시
+h
+복사
+편집
+POST /score
+Content-Type: application/json
 
-⚙️ 주요 기술
+{
+  "username": "alice",
+  "score": 180
+}
+🔧 4. CI/CD 구성 (GitHub Actions)
+yaml
+복사
+편집
+name: CI Build
 
-Docker 기반 멀티 컨테이너 환경 구성
+on:
+  push:
+    branches: [ "main" ]
 
-Docker Compose로 프론트엔드, 백엔드, DB 연동
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Backend Image
+        run: docker build -t snake-backend -f Dockerfile .
+코드 push 시 자동으로 Docker 이미지 빌드 및 테스트 수행
 
-GitHub Actions를 활용한 CI/CD 자동화 파이프라인 구성
+🧩 핵심 포인트
+3계층 아키텍처로 실습 가능한 DevOps 프로젝트
 
-EC2에 직접 배포, 운영 환경 구성 및 테스트
+Docker로 각 계층을 컨테이너화하여 독립 실행
 
-📌 주요 경험
+MySQL 연동 및 초기화 스크립트 자동 적용
 
-애플리케이션 계층 분리를 통한 구조화된 개발 경험
-
-Docker Compose로 각 계층 간 의존성 관리 및 통합 테스트 경험
-
-CI/CD를 통해 코드 변경 시 자동 빌드 및 배포 경험 습득
+GitHub Actions로 자동 빌드 구성
